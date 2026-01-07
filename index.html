@@ -2,268 +2,98 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Mini Game Hub – Physics Update</title>
+  <title>Mini Game Hub – Scoring & Enemies</title>
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, Arial, sans-serif;
-      background: linear-gradient(#0f2027, #203a43, #2c5364);
-      color: #fff;
-      text-align: center;
-    }
-    h1 { margin: 18px 0; }
-
-    .menu button {
-      display: block;
-      margin: 14px auto;
-      padding: 18px 28px;
-      font-size: 18px;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      width: 280px;
-      background: linear-gradient(135deg, #f7971e, #ffd200);
-      color: #111;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-    }
-    .menu button:hover { transform: scale(1.04); }
-
-    canvas {
-      display: none;
-      margin: 20px auto;
-      border-radius: 20px;
-      background: #f5f5f5;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-    }
-
-    .back {
-      display: none;
-      margin: 10px auto;
-      padding: 10px 22px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-    }
-
-    .meter {
-      width: 200px;
-      height: 14px;
-      background: #333;
-      border-radius: 10px;
-      margin: 10px auto;
-      overflow: hidden;
-      display: none;
-    }
-    .meter-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #00e676, #ffeb3b, #ff5252);
-    }
+    body{margin:0;font-family:system-ui;background:linear-gradient(#0f2027,#203a43,#2c5364);color:#fff;text-align:center}
+    h1{margin:16px 0}
+    .menu button{display:block;margin:14px auto;padding:18px 28px;font-size:18px;border:none;border-radius:14px;cursor:pointer;width:280px;background:linear-gradient(135deg,#f7971e,#ffd200);color:#111;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+    canvas{display:none;margin:20px auto;border-radius:20px;background:#f5f5f5;box-shadow:0 15px 35px rgba(0,0,0,.6)}
+    .back{display:none;margin:10px auto;padding:10px 22px;border-radius:12px;border:none;cursor:pointer}
+    .meter{width:200px;height:14px;background:#333;border-radius:10px;margin:10px auto;overflow:hidden;display:none}
+    .meter-fill{height:100%;width:0%;background:linear-gradient(90deg,#00e676,#ffeb3b,#ff5252)}
   </style>
 </head>
 <body>
-
 <h1>🎮 Mini Game Hub</h1>
-
 <div class="menu" id="menu">
   <button onclick="startSnow()">🏂 Snow Runner</button>
   <button onclick="startArchers()">🏹 Ragdoll Archers</button>
   <button onclick="startBasketball()">🏀 Basketball</button>
 </div>
-
 <button class="back" id="backBtn" onclick="backToMenu()">⬅ Back</button>
 <div class="meter" id="powerMeter"><div class="meter-fill" id="meterFill"></div></div>
-
 <canvas id="snow" width="420" height="620"></canvas>
 <canvas id="archers" width="420" height="620"></canvas>
 <canvas id="basketball" width="420" height="620"></canvas>
-
 <script>
-/* ===== MENU ===== */
-const menu = document.getElementById('menu');
-const backBtn = document.getElementById('backBtn');
-const meter = document.getElementById('powerMeter');
-const meterFill = document.getElementById('meterFill');
-const canvases = document.querySelectorAll('canvas');
+const menu=document.getElementById('menu'),backBtn=document.getElementById('backBtn'),meter=document.getElementById('powerMeter'),meterFill=document.getElementById('meterFill');
+const canvases=document.querySelectorAll('canvas');
+function hideAll(){canvases.forEach(c=>c.style.display='none');menu.style.display='none';backBtn.style.display='block'}
+function backToMenu(){canvases.forEach(c=>c.style.display='none');menu.style.display='block';backBtn.style.display='none';meter.style.display='none'}
 
-function hideAll() {
-  canvases.forEach(c => c.style.display = 'none');
-  menu.style.display = 'none';
-  backBtn.style.display = 'block';
-}
-function backToMenu() {
-  canvases.forEach(c => c.style.display = 'none');
-  menu.style.display = 'block';
-  backBtn.style.display = 'none';
-  meter.style.display = 'none';
-}
+/* ===== SNOW RUNNER (SCORE) ===== */
+const snow=document.getElementById('snow'),sctx=snow.getContext('2d');
+let sPlayer,sObs,sSpeed,sOver,sScore,sKeys={};
+function startSnow(){hideAll();snow.style.display='block';sPlayer={x:210,vx:0};sObs=[];sSpeed=4;sOver=false;sScore=0}
+document.addEventListener('keydown',e=>sKeys[e.key]=true);
+document.addEventListener('keyup',e=>sKeys[e.key]=false);
+setInterval(()=>{if(snow.style.display==='block'&&!sOver)sObs.push({x:Math.random()*360+30,y:-40,r:22})},700);
+function snowLoop(){if(snow.style.display!=='block')return requestAnimationFrame(snowLoop);
+sctx.clearRect(0,0,420,620);
+if(!sOver)sScore++;
+if(sKeys['ArrowLeft']||sKeys['a'])sPlayer.vx-=0.6;
+if(sKeys['ArrowRight']||sKeys['d'])sPlayer.vx+=0.6;
+sPlayer.vx*=0.85;sPlayer.x+=sPlayer.vx;sPlayer.x=Math.max(20,Math.min(400,sPlayer.x));
+sctx.fillStyle='#fff';sctx.fillRect(0,0,420,620);
+sctx.fillStyle='#e53935';sctx.beginPath();sctx.arc(sPlayer.x,520,18,0,Math.PI*2);sctx.fill();
+sctx.fillStyle='#2e7d32';
+sObs.forEach(o=>{o.y+=sSpeed;sctx.beginPath();sctx.arc(o.x,o.y,o.r,0,Math.PI*2);sctx.fill();if(Math.hypot(o.x-sPlayer.x,o.y-520)<o.r+18)sOver=true});
+sObs=sObs.filter(o=>o.y<680);sSpeed+=0.004;
+sctx.fillStyle='#000';sctx.fillText('Score: '+sScore,10,20);
+if(sOver){sctx.fillStyle='rgba(0,0,0,.6)';sctx.fillRect(0,0,420,620);sctx.fillStyle='#fff';sctx.fillText('CRASH',180,300)}
+requestAnimationFrame(snowLoop)}snowLoop();
 
-/* ================= SNOW RUNNER (SMOOTH) ================= */
-const snow = document.getElementById('snow');
-const sctx = snow.getContext('2d');
-let sPlayer, sObs, sSpeed, sOver;
-let snowKeys = {};
+/* ===== ARCHERS (ENEMY + HEALTH) ===== */
+const arch=document.getElementById('archers'),actx=arch.getContext('2d');
+let arrow,aiming=false,power=0,aimAngle=0,enemy;
+function startArchers(){hideAll();arch.style.display='block';meter.style.display='block';arrow={x:80,y:360,vx:0,vy:0,flying:false};enemy={x:330,y:360,hp:100};power=0}
+arch.addEventListener('mousedown',()=>{aiming=true;power=0});
+arch.addEventListener('mouseup',()=>{if(!aiming)return;aiming=false;arrow.vx=Math.cos(aimAngle)*power*0.4;arrow.vy=Math.sin(aimAngle)*power*0.4;arrow.flying=true;power=0});
+arch.addEventListener('mousemove',e=>{const r=arch.getBoundingClientRect();aimAngle=Math.atan2(e.clientY-r.top-arrow.y,e.clientX-r.left-arrow.x)});
+function archersLoop(){if(arch.style.display!=='block')return requestAnimationFrame(archersLoop);
+actx.clearRect(0,0,420,620);
+if(aiming)power=Math.min(100,power+1.5);meterFill.style.width=power+'%';
+if(arrow.flying){arrow.x+=arrow.vx;arrow.y+=arrow.vy;arrow.vy+=0.25;
+if(Math.hypot(arrow.x-enemy.x,arrow.y-enemy.y)<20){enemy.hp-=20;arrow.flying=false}
+if(arrow.y>380)arrow={x:80,y:360,vx:0,vy:0,flying:false}}
+// player
+actx.strokeStyle='#000';actx.lineWidth=4;actx.beginPath();actx.moveTo(80,300);actx.lineTo(80,360);actx.stroke();
+// enemy
+actx.beginPath();actx.moveTo(enemy.x,300);actx.lineTo(enemy.x,360);actx.stroke();
+// enemy HP bar
+actx.fillStyle='red';actx.fillRect(enemy.x-25,270,50,6);
+actx.fillStyle='lime';actx.fillRect(enemy.x-25,270,50*(enemy.hp/100),6);
+// arrow
+actx.strokeStyle='#795548';actx.beginPath();actx.moveTo(arrow.x,arrow.y);actx.lineTo(arrow.x-12*Math.cos(aimAngle),arrow.y-12*Math.sin(aimAngle));actx.stroke();
+requestAnimationFrame(archersLoop)}archersLoop();
 
-function startSnow() {
-  hideAll(); snow.style.display = 'block';
-  sPlayer = { x: 210, vx: 0 };
-  sObs = [];
-  sSpeed = 4;
-  sOver = false;
-}
-
-document.addEventListener('keydown', e => snowKeys[e.key]=true);
-document.addEventListener('keyup', e => snowKeys[e.key]=false);
-
-setInterval(() => {
-  if (snow.style.display==='block' && !sOver)
-    sObs.push({ x: Math.random()*360+30, y:-40, r:22 });
-}, 700);
-
-function snowLoop() {
-  if (snow.style.display!=='block') return requestAnimationFrame(snowLoop);
-  sctx.clearRect(0,0,420,620);
-
-  if (snowKeys['ArrowLeft'] || snowKeys['a']) sPlayer.vx -= 0.6;
-  if (snowKeys['ArrowRight'] || snowKeys['d']) sPlayer.vx += 0.6;
-  sPlayer.vx *= 0.85;
-  sPlayer.x += sPlayer.vx;
-  sPlayer.x = Math.max(20, Math.min(400, sPlayer.x));
-
-  sctx.fillStyle='#fff'; sctx.fillRect(0,0,420,620);
-
-  sctx.fillStyle='#e53935';
-  sctx.beginPath(); sctx.arc(sPlayer.x,520,18,0,Math.PI*2); sctx.fill();
-
-  sctx.fillStyle='#2e7d32';
-  sObs.forEach(o=>{
-    o.y+=sSpeed;
-    sctx.beginPath(); sctx.arc(o.x,o.y,o.r,0,Math.PI*2); sctx.fill();
-    if(Math.hypot(o.x-sPlayer.x,o.y-520)<o.r+18) sOver=true;
-  });
-  sObs = sObs.filter(o=>o.y<680);
-  sSpeed+=0.004;
-
-  if(sOver){
-    sctx.fillStyle='rgba(0,0,0,0.6)'; sctx.fillRect(0,0,420,620);
-    sctx.fillStyle='#fff'; sctx.fillText('CRASH',180,300);
-  }
-  requestAnimationFrame(snowLoop);
-}
-snowLoop();
-
-/* ================= ARCHERS (AIM + HOLD POWER) ================= */
-const arch = document.getElementById('archers');
-const actx = arch.getContext('2d');
-let arrow, aiming=false, power=0, aimAngle=0;
-
-function startArchers() {
-  hideAll(); arch.style.display='block'; meter.style.display='block';
-  arrow = { x:80, y:360, vx:0, vy:0, flying:false };
-  power = 0;
-}
-
-arch.addEventListener('mousedown', e => {
-  aiming = true; power = 0;
-});
-
-arch.addEventListener('mouseup', e => {
-  if(!aiming) return;
-  aiming = false;
-  arrow.vx = Math.cos(aimAngle) * power * 0.4;
-  arrow.vy = Math.sin(aimAngle) * power * 0.4;
-  arrow.flying = true;
-  power = 0;
-});
-
-arch.addEventListener('mousemove', e => {
-  const rect = arch.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  aimAngle = Math.atan2(my - arrow.y, mx - arrow.x);
-});
-
-function archersLoop() {
-  if (arch.style.display!=='block') return requestAnimationFrame(archersLoop);
-  actx.clearRect(0,0,420,620);
-
-  // power meter
-  if(aiming){ power = Math.min(100, power + 1.5); }
-  meterFill.style.width = power + '%';
-
-  // gravity
-  if(arrow.flying){
-    arrow.x += arrow.vx;
-    arrow.y += arrow.vy;
-    arrow.vy += 0.25;
-    if(arrow.y>380){ arrow = { x:80, y:360, vx:0, vy:0, flying:false }; }
-  }
-
-  // stickman
-  actx.strokeStyle='#000'; actx.lineWidth=4;
-  actx.beginPath(); actx.moveTo(80,300); actx.lineTo(80,360); actx.stroke();
-
-  // arrow
-  actx.strokeStyle='#795548';
-  actx.beginPath(); actx.moveTo(arrow.x,arrow.y);
-  actx.lineTo(arrow.x-12*Math.cos(aimAngle), arrow.y-12*Math.sin(aimAngle));
-  actx.stroke();
-
-  requestAnimationFrame(archersLoop);
-}
-archersLoop();
-
-/* ================= BASKETBALL (AIM + POWER) ================= */
-const ball = document.getElementById('basketball');
-const bctx = ball.getContext('2d');
-let b = {}, aimingB=false, bPower=0, bAngle=-Math.PI/3;
-
-function startBasketball() {
-  hideAll(); ball.style.display='block'; meter.style.display='block';
-  b = { x:210, y:520, vx:0, vy:0, shot:false };
-}
-
-ball.addEventListener('mousedown', ()=>{ aimingB=true; bPower=0; });
-ball.addEventListener('mouseup', ()=>{
-  aimingB=false;
-  b.vx = Math.cos(bAngle)*bPower*0.45;
-  b.vy = Math.sin(bAngle)*bPower*0.45;
-  b.shot=true;
-  bPower=0;
-});
-
-ball.addEventListener('mousemove', e=>{
-  const r=ball.getBoundingClientRect();
-  const mx=e.clientX-r.left, my=e.clientY-r.top;
-  bAngle = Math.atan2(my-b.y, mx-b.x);
-});
-
-document.addEventListener('keydown', e=>{
-  if(ball.style.display!=='block') return;
-  if(e.key==='ArrowLeft'||e.key==='a') bAngle-=0.05;
-  if(e.key==='ArrowRight'||e.key==='d') bAngle+=0.05;
-});
-
-function basketLoop() {
-  if (ball.style.display!=='block') return requestAnimationFrame(basketLoop);
-  bctx.clearRect(0,0,420,620);
-
-  if(aimingB){ bPower=Math.min(100,bPower+1.2); }
-  meterFill.style.width=bPower+'%';
-
-  if(b.shot){
-    b.x+=b.vx; b.y+=b.vy; b.vy+=0.35;
-    if(b.y>520){ b={x:210,y:520,vx:0,vy:0,shot:false}; }
-  }
-
-  // court
-  bctx.fillStyle='#ffcc80'; bctx.fillRect(0,400,420,220);
-  bctx.strokeRect(150,120,120,12);
-
-  bctx.beginPath(); bctx.arc(b.x,b.y,12,0,Math.PI*2); bctx.fill();
-  requestAnimationFrame(basketLoop);
-}
-basketLoop();
+/* ===== BASKETBALL (SCORE) ===== */
+const ball=document.getElementById('basketball'),bctx=ball.getContext('2d');
+let b,aimingB=false,bPower=0,bAngle=-Math.PI/3,bScore=0;
+function startBasketball(){hideAll();ball.style.display='block';meter.style.display='block';b={x:210,y:520,vx:0,vy:0,shot:false}}
+ball.addEventListener('mousedown',()=>{aimingB=true;bPower=0});
+ball.addEventListener('mouseup',()=>{aimingB=false;b.vx=Math.cos(bAngle)*bPower*0.45;b.vy=Math.sin(bAngle)*bPower*0.45;b.shot=true;bPower=0});
+ball.addEventListener('mousemove',e=>{const r=ball.getBoundingClientRect();bAngle=Math.atan2(e.clientY-r.top-b.y,e.clientX-r.left-b.x)});
+document.addEventListener('keydown',e=>{if(ball.style.display!=='block')return;if(e.key==='ArrowLeft'||e.key==='a')bAngle-=0.05;if(e.key==='ArrowRight'||e.key==='d')bAngle+=0.05});
+function basketLoop(){if(ball.style.display!=='block')return requestAnimationFrame(basketLoop);
+bctx.clearRect(0,0,420,620);
+if(aimingB)bPower=Math.min(100,bPower+1.2);meterFill.style.width=bPower+'%';
+if(b.shot){b.x+=b.vx;b.y+=b.vy;b.vy+=0.35;if(b.y>520){b={x:210,y:520,vx:0,vy:0,shot:false}}if(b.x>190&&b.x<230&&b.y>130&&b.y<150){bScore++;b={x:210,y:520,vx:0,vy:0,shot:false}}}
+// court
+bctx.fillStyle='#ffcc80';bctx.fillRect(0,400,420,220);bctx.strokeRect(150,120,120,12);
+bctx.beginPath();bctx.arc(b.x,b.y,12,0,Math.PI*2);bctx.fill();
+bctx.fillStyle='#000';bctx.fillText('Score: '+bScore,10,20);
+requestAnimationFrame(basketLoop)}basketLoop();
 </script>
 </body>
 </html>
