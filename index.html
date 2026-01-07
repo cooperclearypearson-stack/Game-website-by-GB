@@ -53,29 +53,117 @@ sctx.fillStyle='#000';sctx.fillText('Score: '+sScore,10,20);
 if(sOver){sctx.fillStyle='rgba(0,0,0,.6)';sctx.fillRect(0,0,420,620);sctx.fillStyle='#fff';sctx.fillText('CRASH',180,300)}
 requestAnimationFrame(snowLoop)}snowLoop();
 
-/* ===== ARCHERS (ENEMY + HEALTH) ===== */
+/* ===== ARCHERS (ENEMY SHOOTS BACK + HITBOX FIX) ===== */
 const arch=document.getElementById('archers'),actx=arch.getContext('2d');
-let arrow,aiming=false,power=0,aimAngle=0,enemy;
-function startArchers(){hideAll();arch.style.display='block';meter.style.display='block';arrow={x:80,y:360,vx:0,vy:0,flying:false};enemy={x:330,y:360,hp:100};power=0}
+let arrow,enemyArrow,aiming=false,power=0,aimAngle=0,enemy;
+function startArchers(){
+  hideAll();
+  arch.style.display='block';
+  meter.style.display='block';
+  arrow={x:80,y:360,vx:0,vy:0,flying:false};
+  enemyArrow={x:0,y:0,vx:0,vy:0,flying:false};
+  enemy={x:330,y:-100,hp:100,falling:true};
+  power=0;
+}
+
 arch.addEventListener('mousedown',()=>{aiming=true;power=0});
-arch.addEventListener('mouseup',()=>{if(!aiming)return;aiming=false;arrow.vx=Math.cos(aimAngle)*power*0.4;arrow.vy=Math.sin(aimAngle)*power*0.4;arrow.flying=true;power=0});
-arch.addEventListener('mousemove',e=>{const r=arch.getBoundingClientRect();aimAngle=Math.atan2(e.clientY-r.top-arrow.y,e.clientX-r.left-arrow.x)});
-function archersLoop(){if(arch.style.display!=='block')return requestAnimationFrame(archersLoop);
-actx.clearRect(0,0,420,620);
-if(aiming)power=Math.min(100,power+1.5);meterFill.style.width=power+'%';
-if(arrow.flying){arrow.x+=arrow.vx;arrow.y+=arrow.vy;arrow.vy+=0.25;
-if(Math.hypot(arrow.x-enemy.x,arrow.y-enemy.y)<20){enemy.hp-=20;arrow.flying=false}
-if(arrow.y>380)arrow={x:80,y:360,vx:0,vy:0,flying:false}}
-// player
-actx.strokeStyle='#000';actx.lineWidth=4;actx.beginPath();actx.moveTo(80,300);actx.lineTo(80,360);actx.stroke();
-// enemy
-actx.beginPath();actx.moveTo(enemy.x,300);actx.lineTo(enemy.x,360);actx.stroke();
-// enemy HP bar
-actx.fillStyle='red';actx.fillRect(enemy.x-25,270,50,6);
-actx.fillStyle='lime';actx.fillRect(enemy.x-25,270,50*(enemy.hp/100),6);
-// arrow
-actx.strokeStyle='#795548';actx.beginPath();actx.moveTo(arrow.x,arrow.y);actx.lineTo(arrow.x-12*Math.cos(aimAngle),arrow.y-12*Math.sin(aimAngle));actx.stroke();
-requestAnimationFrame(archersLoop)}archersLoop();
+arch.addEventListener('mouseup',()=>{
+  if(!aiming) return;
+  aiming=false;
+  arrow.vx=Math.cos(aimAngle)*power*0.4;
+  arrow.vy=Math.sin(aimAngle)*power*0.4;
+  arrow.flying=true;
+  power=0;
+});
+arch.addEventListener('mousemove',e=>{
+  const r=arch.getBoundingClientRect();
+  aimAngle=Math.atan2(e.clientY-r.top-arrow.y,e.clientX-r.left-arrow.x);
+});
+
+function spawnEnemy(){
+  enemy={x:330,y:-100,hp:100,falling:true};
+}
+
+function enemyShoot(){
+  if(enemyArrow.flying||enemy.falling) return;
+  const angle=Math.atan2(360-enemy.y,80-enemy.x);
+  enemyArrow={
+    x:enemy.x,
+    y:enemy.y,
+    vx:Math.cos(angle)*4,
+    vy:Math.sin(angle)*4,
+    flying:true
+  };
+}
+
+setInterval(()=>{
+  if(arch.style.display==='block') enemyShoot();
+},1800);
+
+function archersLoop(){
+  if(arch.style.display!=='block') return requestAnimationFrame(archersLoop);
+  actx.clearRect(0,0,420,620);
+
+  // enemy falling reset
+  if(enemy.falling){
+    enemy.y+=3;
+    if(enemy.y>=360){enemy.y=360;enemy.falling=false;}
+  }
+
+  // power meter
+  if(aiming) power=Math.min(100,power+1.5);
+  meterFill.style.width=power+'%';
+
+  // player arrow physics
+  if(arrow.flying){
+    arrow.x+=arrow.vx;
+    arrow.y+=arrow.vy;
+    arrow.vy+=0.25;
+
+    // PROPER HITBOX (TORSO)
+    if(Math.abs(arrow.x-enemy.x)<18 && Math.abs(arrow.y-enemy.y)<50){
+      enemy.hp-=25;
+      arrow.flying=false;
+    }
+
+    if(arrow.y>420) arrow={x:80,y:360,vx:0,vy:0,flying:false};
+  }
+
+  // enemy arrow physics
+  if(enemyArrow.flying){
+    enemyArrow.x+=enemyArrow.vx;
+    enemyArrow.y+=enemyArrow.vy;
+    enemyArrow.vy+=0.25;
+    if(enemyArrow.y>420) enemyArrow.flying=false;
+  }
+
+  // enemy death -> fall from sky
+  if(enemy.hp<=0){ spawnEnemy(); }
+
+  // player stickman
+  actx.strokeStyle='#000'; actx.lineWidth=4;
+  actx.beginPath(); actx.moveTo(80,300); actx.lineTo(80,360); actx.stroke();
+
+  // enemy stickman
+  actx.beginPath(); actx.moveTo(enemy.x,enemy.y-60); actx.lineTo(enemy.x,enemy.y); actx.stroke();
+
+  // enemy HP bar
+  actx.fillStyle='red'; actx.fillRect(enemy.x-25,enemy.y-80,50,6);
+  actx.fillStyle='lime'; actx.fillRect(enemy.x-25,enemy.y-80,50*(enemy.hp/100),6);
+
+  // arrows
+  actx.strokeStyle='#795548';
+  actx.beginPath(); actx.moveTo(arrow.x,arrow.y);
+  actx.lineTo(arrow.x-12*Math.cos(aimAngle),arrow.y-12*Math.sin(aimAngle)); actx.stroke();
+
+  if(enemyArrow.flying){
+    actx.beginPath(); actx.moveTo(enemyArrow.x,enemyArrow.y);
+    actx.lineTo(enemyArrow.x-10,enemyArrow.y); actx.stroke();
+  }
+
+  requestAnimationFrame(archersLoop);
+}
+archersLoop();
 
 /* ===== BASKETBALL (SCORE) ===== */
 const ball=document.getElementById('basketball'),bctx=ball.getContext('2d');
